@@ -1,0 +1,4 @@
+python classifier_tf2.py TRAIN E:/taha/code/FaceNet-tfLite/.venv/src/dataset/5-celebrity-faces-dataset/crop/train/ E:/taha/code/ras-face/.venv/src/models/davidsandberg/20180402-114759/20180402-114759.pb E:/taha/code/ras-face/.venv/src/models/davidsandberg/5celeb_classifier.pkl --batch_size 1000
+
+
+python classifier_tf2.py CLASSIFY E:/taha/code/FaceNet-tfLite/.venv/src/dataset/5-celebrity-faces-dataset/crop/val/ E:/taha/code/ras-face/.venv/src/models/davidsandberg/20180402-114759/20180402-114759.pb E:/taha/code/ras-face/.venv/src/models/davidsandberg/5celeb_classifier.pkl --batch_size 1000
