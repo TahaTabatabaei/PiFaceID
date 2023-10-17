@@ -10,8 +10,33 @@ from os import listdir
 from os.path import isdir
 import os
 
+from skimage.util import random_noise
+from skimage.transform import rotate
+from skimage.filters import gaussian
 
 filename = "image.JPG"
+
+def flip(image):
+    # random flip
+    image = np.fliplr(image)
+    return image
+
+def rotate_with_angle(image, angle):
+    # random rotation
+    image = rotate(image, angle)
+    return image
+
+def add_noise(image):
+    # random noise
+    image = random_noise(image, mode='gaussian', var=0.05)
+    return image
+
+def blur(image):
+    # random blur
+    image = gaussian(image, sigma=3)
+    return image
+
+
  
 # extract a single face from a given photograph
 def extract_face(filename, cropDir, required_size=(160, 160)):
@@ -48,6 +73,42 @@ def extract_face(filename, cropDir, required_size=(160, 160)):
     # save croped images
     image.save(cropDir[:-4]+"-cropped.jpg")
     print(cropDir[:-4]+"-cropped.jpg")
+
+
+    # augment
+    transformed_image = [face]
+
+    flipped_image = flip(face)
+    transformed_image.append(flipped_image)
+    flipped_image = Image.fromarray(flipped_image)
+    flipped_image = flipped_image.resize(required_size)
+    flipped_image.save(cropDir[:-4]+"-cf.jpg")
+
+    rotated_imagel = rotate_with_angle(face, 22)
+    transformed_image.append(rotated_imagel)
+    rotated_imagel = Image.fromarray((rotated_imagel* 255).astype(np.uint8))
+    rotated_imagel = rotated_imagel.resize(required_size)
+    rotated_imagel.save(cropDir[:-4]+"-crl.jpg")
+
+    rotated_imager = rotate_with_angle(face, -22)
+    transformed_image.append(rotated_imager)
+    rotated_imager = Image.fromarray((rotated_imager* 255).astype(np.uint8))
+    rotated_imager = rotated_imager.resize(required_size)
+    rotated_imager.save(cropDir[:-4]+"-crr.jpg")
+
+    names = ["-cn.jpg", "-cfn.jpg", "-crln.jpg", "-crrn.jpg"]
+    names2 = ["-cb.jpg", "-cfb.jpg", "-crlb.jpg", "-crrb.jpg"]
+    for img, name, name2 in zip(transformed_image, names, names2):
+        nosisy_image = add_noise(img)
+        nosisy_image = Image.fromarray((nosisy_image* 255).astype(np.uint8))
+        nosisy_image = nosisy_image.resize(required_size)
+        nosisy_image.save(cropDir[:-4]+name)
+
+        blurred_image = blur(img)
+        blurred_image = Image.fromarray((blurred_image* 255).astype(np.uint8))
+        blurred_image = blurred_image.resize(required_size)
+        blurred_image.save(cropDir[:-4]+name2)
+        
 
     return face_array
 
