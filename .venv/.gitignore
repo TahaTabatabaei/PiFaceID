@@ -6,3 +6,4 @@ src/tflites
 src/keras/content/keras-facenet/model/20180402-114759
 src/keras/content/keras-facenet/model/keras/npy_weights
 src/keras/content/keras-facenet/model/keras/weights
+src/dataset/*
