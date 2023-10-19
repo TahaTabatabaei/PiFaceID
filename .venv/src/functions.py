@@ -239,6 +239,35 @@ def graph_to_savedModel(frozen_graph_path, saved_model_path):
 
 
 
-import tensorflow as tf
+import csv
+
+def save_to_csv(file_path, data, labels):
+    with open(file_path, 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([labels] + data.tolist())
+
+
+
+from scipy.spatial.distance import cosine
+
+def find_max_cosine_similarity(file_path, new_array):
+    max_similarity = -1  # Initialize to a value lower than possible cosine similarity
+    most_similar_label = None
+
+    with open(file_path, 'r') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            label = row[0]
+            stored_array = np.array(list(map(float, row[1:])))
+            similarity = 1 - cosine(new_array, stored_array)
+
+            if similarity > max_similarity:
+                max_similarity = similarity
+                most_similar_label = label
+
+    return most_similar_label, max_similarity
+
+
+
 
 
