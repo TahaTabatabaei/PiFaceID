@@ -83,6 +83,7 @@ for i in imgs:
 # Load the TFLite model and allocate tensors.
 interpreter = tf.lite.Interpreter(model_path=os.path.join(model_dir, model_filename_tfl))
 # interpreter = tflite.Interpreter(model_path=os.path.join(model_dir, model_filename_tfl))
+print("inference with default model")
 
 interpreter.allocate_tensors()
 
@@ -95,6 +96,7 @@ print("distance jerry1 vs taha1", np.linalg.norm(_predictions[2, :] - _predictio
 
 interpreter2 = tf.lite.Interpreter(model_path=os.path.join(model_dir, tfl_default_optimized_v1))
 # interpreter2 = tflite.Interpreter(model_path=os.path.join(model_dir, tfl_default_optimized_v1))
+print("inferene with optimized model (default optimization)")
 
 interpreter2.allocate_tensors()
 
