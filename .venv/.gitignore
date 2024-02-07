@@ -1,7 +1,10 @@
 Lib
 Scripts
 share
-src/models
+src/models/davidsandberg
+src/models/mobileFaceNet
+src/models/ghostFaceNet/GhostFaceNet_W1.3_S1_ArcFace.h5
+src/models/ghostFaceNet/epoch17.h5
 src/tflites
 src/keras/content/keras-facenet/model/20180402-114759
 src/keras/content/keras-facenet/model/keras/npy_weights
