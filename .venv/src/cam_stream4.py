@@ -21,7 +21,7 @@ from scipy.spatial.distance import cosine
 
 
 def save_to_csv(file_path, data, labels):
-    with open(file_path, 'a', newline="") as csvfile:
+    with open(file_path, 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow([labels] + data.tolist())
         
@@ -122,94 +122,110 @@ def predict(model, sample):
     ret = np.stack(outputs)
     return ret
 
+
 # draw face callback and predict routine    
 def draw_faces(request):
     timestamp = time.strftime("%Y-%m-%d %X")
+    
+    global skipping
+    global name
+    
     with MappedArray(request, "main") as m:
         cv2.putText(m.array, timestamp, origin, font, scale, colour, thickness)
         
-        for f in faces:
-            (x, y, w, h) = [c * n // d for c, n, d in zip(f, (w0, h0) * 2, (w1, h1) * 2)]
+        for i,f in enumerate(faces):
+            (x, y, w, h) = [c * n // d for c, n, d in zip(faces[0], (w0, h0) * 2, (w1, h1) * 2)]
             cv2.rectangle(m.array, (x, y), (x + w, y + h), (0, 255, 0, 0))
+                                    
+
             
-            #print(type(m.array))
-            crop = np.array(m.array[y:y+h , x:x+w])
-            # dsize=(160 ,160) for facenet and dsize=(112, 112) for ghostnet 
-            crop = cv2.resize(crop[:,:,0:3], dsize=(160, 160), interpolation=cv2.INTER_CUBIC)
-            #crop = np.resize((160,160), True)
-            #crop = m.array[y:y+h, x:x+w]
-            #print(x,y,w,h)
-            #print(f"face shape: {crop[:,:,:]}")
-            #print(f"face shape: {m.array[y:y+h , x:x+w].shape}")
-            
-            _predictions = predict(interpreter, crop)
-            
-            new_face = _predictions[0, :].flatten()
-            
-            most_similar_label, max_similarity = find_max_cosine_similarity("dataset/database.csv", new_face)
-            
-            print(f"Most similar label: {most_similar_label}, Cosine simlarity: {max_similarity}") 
-            #name = classifiy(classifier, class_names, _predictions[0, :])
-            
-            if max_similarity > 0.40:
-                name = most_similar_label
-                print(f"name: {name}")
-            else:
-                name = "Unkown"
-                print(f"name2: {name}")
+            if skipping < 1:
+                #if i == len(faces)-1:
+                skipping = 10
+                
+                crop = np.array(m.array[y:y+h , x:x+w])
+                
+                mean, std = crop.mean(), crop.std()
+                crop = (crop-mean)/std
+                # dsize=(160 ,160) for facenet and dsize=(112, 112) for ghostnet 
+                crop = cv2.resize(crop[:,:,0:3], dsize=(112, 112), interpolation=cv2.INTER_CUBIC)
+                
+                _predictions = predict(interpreter, crop)
+                
+                new_face = _predictions[0, :].flatten()
+                
+                most_similar_label, max_similarity = find_max_cosine_similarity("dataset/database_g.csv", new_face)
+                
+                print(f"Most similar label: {most_similar_label}, Cosine simlarity: {max_similarity}") 
+                #name = classifiy(classifier, class_names, _predictions[0, :])
+                
+                if max_similarity > 0.40:
+                    name = most_similar_label
+                    print(f"name: {i}")
+                else:
+                    name = "Unkown"
+                    print(f"name2: {i}")
             
             label = (x, y-5)
             cv2.putText(m.array, name, label, font, scale, colour, thickness)
+            
+               
+ 
 
-import warnings
-warnings.simplefilter("ignore")
+if __name__ == "__main__":
 
+    import warnings
+    warnings.simplefilter("ignore")
 
-face_detector = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    face_detector = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-colour = (0, 255, 0)
-origin = (0, 30)
-font = cv2.FONT_HERSHEY_SIMPLEX
-scale = 1
-thickness = 2
+    colour = (0, 255, 0)
+    origin = (0, 30)
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    scale = 1
+    thickness = 2
+    global skipping
+    global name
+    global lock
+    lock = False
+    name =""
+    skipping = 0    
 
-# load classifier model
-# classifier , class_names = load_model("dataset/myImages_classifier.pkl")
-#classifier , class_names = load_model("dataset/apaU_classifier.pkl")
-
-# load tflite embedding model
-model_filename_tfl = "/home/taha/Documents/code/prj/face/myenv/src/model/keras/content/keras-facenet/model/keras/model/facenet_keras.tflite"
-tfl_default_optimized_v1 = "/home/taha/Documents/code/prj/face/myenv/src/model/keras/content/keras-facenet/model/keras/model/tf1_default_optimized_v1.tflite"
-ghost_basic_model = "/home/taha/Documents/code/prj/face/env/src/models/ghostFaceNet/tflites/basic_model17.tflite"
-ghost_quant_model = "/home/taha/Documents/code/prj/face/env/src/models/ghostFaceNet/tflites/quant_model17.tflite"
-
-
-interpreter = tf.lite.Interpreter(model_path=tfl_default_optimized_v1)
-interpreter.allocate_tensors()
-
-picam2 = Picamera2()
-picam2.start_preview(Preview.QTGL)
-#640, 480
-#320, 240
-config = picam2.create_preview_configuration(main={"size": (720, 640)},
-                                             lores={"size": (640, 480), "format": "YUV420"})
-picam2.configure(config)
-
-(w0, h0) = picam2.stream_configuration("main")["size"]
-(w1, h1) = picam2.stream_configuration("lores")["size"]
-s1 = picam2.stream_configuration("lores")["stride"]
-faces = []
-picam2.post_callback = draw_faces
-#picam2.post_callback = draw_faces(interpreter=interpreter, classifier=classifier, class_names=class_names)
+    # load tflite embedding model
+    model_filename_tfl = "/home/taha/Documents/code/prj/face/myenv/src/model/keras/content/keras-facenet/model/keras/model/facenet_keras.tflite"
+    tfl_default_optimized_v1 = "/home/taha/Documents/code/prj/face/myenv/src/model/keras/content/keras-facenet/model/keras/model/tf1_default_optimized_v1.tflite"
+    ghost_basic_model = "/home/taha/Documents/code/prj/face/env/src/models/ghostFaceNet/tflites/basic_model17.tflite"
+    ghost_quant_model = "/home/taha/Documents/code/prj/face/env/src/models/ghostFaceNet/tflites/quant_model17.tflite"
 
 
-picam2.start()
-
-start_time = time.monotonic()
-# Run for 10 seconds so that we can include this example in the test suite.
-while time.monotonic() - start_time < 10:
-    buffer = picam2.capture_buffer("lores")
-    grey = buffer[:s1 * h1].reshape((h1, s1))
-    faces = face_detector.detectMultiScale(grey, 1.1, 3)
+    interpreter = tf.lite.Interpreter(model_path=ghost_quant_model)
+    interpreter.allocate_tensors()
 
 
+    picam2 = Picamera2()
+    picam2.start_preview(Preview.QTGL)
+    #640, 480
+    #320, 240
+    #720, 640
+    config = picam2.create_preview_configuration(main={"size": (720, 640)},
+                                                 lores={"size": (640, 480), "format": "YUV420"})
+    picam2.configure(config)
+
+    (w0, h0) = picam2.stream_configuration("main")["size"]
+    (w1, h1) = picam2.stream_configuration("lores")["size"]
+    s1 = picam2.stream_configuration("lores")["stride"]
+    faces = []
+    picam2.post_callback = draw_faces
+    #picam2.post_callback = draw_faces(interpreter=interpreter, classifier=classifier, class_names=class_names)
+
+    picam2.start()
+    
+    start_time = time.monotonic()
+    # Run for 10 seconds.
+    while time.monotonic() - start_time < 10:
+        skipping -=1
+        print(f"skipping: {skipping}")
+        buffer = picam2.capture_buffer("lores")
+        grey = buffer[:s1 * h1].reshape((h1, s1))
+        faces = face_detector.detectMultiScale(grey, 1.1, 3)
+        
